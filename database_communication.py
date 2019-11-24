@@ -10,15 +10,16 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 import readings as read
+import light_sensor as ls
 
-cred = credentials.Certificate("C:\\Users\\maxtm\\Dropbox\\Shared Python Files\\IED\\Fridge Tracker\\"
-                               "smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
+cred = credentials.Certificate("/home/pi/Smart_Fridge/smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 
 # The main chunk of the program
-def tick_forward(database, alarm):
+def tick_forward(database, door_alarm, power_alarm):
+    st_time = datetime.datetime.today()
     items = []
     # Get readings
     readings = []
@@ -26,27 +27,39 @@ def tick_forward(database, alarm):
     exp_change = 0
     # Gets readings and updates fridge data
     for z in range(15):
-        temp, humd = read.get_reading()
-        readings.append(temp)
+        humd, temp = read.get_reading()
+        #readings.append(temp)
         f_items = dict()
-        if temp >= 40 and humd >= 70:
-            if alarm is True:
-                pass
-            else:
-                f_items['alarm'] = True
-                alarm = True
+        if temp >= 10:
+            if ls.door_open(11):
+                if door_alarm is True:
+                    pass
+                else:
+                    f_items['door_alarm'] = True
+                    door_alarm = True
+                    
+            elif not ls.door_open(11):
+                if power_alarm is True:
+                    pass
+                else:
+                    f_items['power_alarm'] = True
+                    power_alarm = True
         else:
-            f_items['alarm'] = False
-            alarm = False
+            f_items['door_alarm'] = False
+            f_items['power_alarm'] = False
+            door_alarm = False
+            power_alarm = False
         f_items['humidity'] = humd
-        f_items["temperature"] = temp
+        f_items["temperature"] = int((temp * 1.8) + 32)
         f_data_ref = db.collection(u'{}'.format('fridge_data')).document(u'{}'.format("data"))
         f_data_ref.set(f_items, merge=True)
     # Takes average to use updating time remaining
+    """
+    Temp Comment to Test
     for reading in readings:
         total += reading
     average = total/len(readings)
-    if 40 < average < 90:
+    if 10 < average < 50:
         exp_change = 0.00208333333
 
     # Get items from firebase
@@ -78,15 +91,20 @@ def tick_forward(database, alarm):
             elif isinstance(item[1][dict_item], int):
                 new_data[u'{}'.format(dict_item)] = item[1][dict_item]
         new_data_ref.set(new_data)
+    """
+    
+    end_time = datetime.datetime.today()
+    print(end_time - st_time)
 
-    return alarm
+    return door_alarm, power_alarm
 
 
-alarm = 0
+door_alarm = 0
+power_alarm = 0
 
 # Guard
 if __name__ == '__main__':
-    user_input = input("Enter Collection ==> ")
-    for x in range(50):
-        alarm = tick_forward(user_input, alarm)
+    print("sTART")
+    while True:
+        door_alarm, power_alarm = tick_forward('inventory', door_alarm, power_alarm)
         print("TICK")

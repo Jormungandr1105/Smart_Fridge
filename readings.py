@@ -12,3 +12,7 @@ DHT_PIN = 4
 
 def get_reading():
     humidity, temperature = Adafruit_DHT.read_retry(DHT_SENSOR, DHT_PIN)
+    return int(humidity), int(temperature)
+
+if __name__ == '__main__':
+    print(get_reading())
