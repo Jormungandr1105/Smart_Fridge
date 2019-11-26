@@ -4,6 +4,7 @@ This part communicates with the database
 Author: Max Marshall
 Project: Fridge Tracker
 """
+import time
 import datetime
 import math
 import firebase_admin
@@ -13,11 +14,24 @@ import readings as read
 import light_sensor as ls
 import mario
 
+cred = None
+
 try:
     cred = credentials.Certificate("/home/pi/Smart_Fridge/smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
 except FileNotFoundError:
+    pass
+try:
+    cred = credentials.Certificate("D:\\Python Scripts\\GitHub\\Smart_Fridge\\"
+                                   "smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
+except FileNotFoundError:
+    pass
+try:
     cred = credentials.Certificate("C:\\Users\\maxtm\\Desktop\\Python Projects\\GitHub\\Smart_Fridge\\"
                                    "smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
+except FileNotFoundError:
+    pass
+
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -134,12 +148,14 @@ def play_song(s):
     mario.setup()
     if s == 0:
         print("Super Mario Theme")
-        for x in range(5):
+        for x in range(2):
             mario.play(mario.melody, mario.tempo, 1.3, 0.800)
+            time.sleep(2)
     if s == 1:
         print("Super Mario Underworld Theme")
-        for x in range(5):
+        for x in range(2):
             mario.play(mario.underworld_melody, mario.underworld_tempo, 1.3, 0.800)
+            time.sleep(2)
     mario.destroy()
 
 

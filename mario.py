@@ -208,24 +208,19 @@ def destroy():
 def play(melody, tempo, pause, pace=0.800):
     global gpio_mod
     for i in range(0, len(melody)):     # Play song
-
         if gpio_mod:
             noteDuration = pace/tempo[i]
             buzz(melody[i], noteDuration)    # Change the frequency along the song note
             pauseBetweenNotes = noteDuration * 100
             time.sleep(pauseBetweenNotes)
         else:
-            print(melody[i])
-            noteDuration = pace * tempo[i]
+            noteDuration = pace * tempo[i] * 15
             windows_buzz(melody[i], int(noteDuration))
-            time.sleep(pace)
-
 
 
 def windows_buzz(freq, length):
     if freq == 0:
-        time.sleep(length)
-        return
+        time.sleep(length/1000)
     else:
         winsound.Beep(freq, length)
 
