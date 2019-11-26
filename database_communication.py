@@ -108,7 +108,7 @@ def update_firebase(database, readings, part1_time):
         y = item[1]['addDate']
         z = float(z)
         y = float(y)
-        z = z - (y/z)*(exp_change * (z - y))
+        z = z - (exp_change * (z - y))
         current_time = datetime.datetime.today()
         ct_mils = (current_time.timestamp()*1000)
         item[1]['expDate'] = int(z)
@@ -134,12 +134,10 @@ def play_song(s):
     mario.setup()
     if s == 0:
         print("Super Mario Theme")
-        for x in range(5):
-            mario.play(mario.melody, mario.tempo, 1.3, 0.800)
-    if s == 1:
+        mario.play(mario.melody, mario.tempo, 1.3, 0.800)
+    elif s == 1:
         print("Super Mario Underworld Theme")
-        for x in range(5):
-            mario.play(mario.underworld_melody, mario.underworld_tempo, 1.3, 0.800)
+        mario.play(mario.underworld_melody, mario.underworld_tempo, 1.3, 0.800)
     mario.destroy()
 
 
