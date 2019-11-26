@@ -11,57 +11,104 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import readings as read
 import light_sensor as ls
+import mario
 
-cred = credentials.Certificate("/home/pi/Smart_Fridge/smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
+cred = None
+
+try:
+    cred = credentials.Certificate("/home/pi/Smart_Fridge/smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
+except FileNotFoundError:
+    pass
+try:
+    cred = credentials.Certificate("D:\\Python Scripts\\GitHub\\Smart_Fridge\\"
+                                   "smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
+except FileNotFoundError:
+    pass
+try:
+    cred = credentials.Certificate("C:\\Users\\maxtm\\Desktop\\Python Projects\\GitHub\\Smart_Fridge\\"
+                                   "smartfridge-28fdd-firebase-adminsdk-cn2d2-a24a5cb16c.json")
+except FileNotFoundError:
+    pass
+
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 
 # The main chunk of the program
-def tick_forward(database, door_alarm, power_alarm):
+def tick_forward(door_alarm, power_alarm):
+    global time_since_alarm
+    global st_time
     st_time = datetime.datetime.today()
-    items = []
     # Get readings
     readings = []
-    total = 0
-    exp_change = 0
     # Gets readings and updates fridge data
-    for z in range(15):
+    for z in range(5):
         humd, temp = read.get_reading()
-        #readings.append(temp)
+        readings.append(temp)
         f_items = dict()
-        if temp >= 10:
+        if temp > 4:
             if ls.door_open(11):
-                if door_alarm is True:
-                    pass
-                else:
-                    f_items['door_alarm'] = True
-                    door_alarm = True
-                    
-            elif not ls.door_open(11):
                 if power_alarm is True:
                     pass
                 else:
-                    f_items['power_alarm'] = True
-                    power_alarm = True
+                    if door_alarm is True:
+                        pass
+                    else:
+                        f_items['door_alarm'] = True
+                        door_alarm = True
+
+            elif not ls.door_open(11):
+                if door_alarm is True:
+                    pass
+                else:
+                    if power_alarm is True:
+                        pass
+                    else:
+                        f_items['power_alarm'] = True
+                        power_alarm = True
         else:
             f_items['door_alarm'] = False
             f_items['power_alarm'] = False
             door_alarm = False
             power_alarm = False
+
         f_items['humidity'] = humd
         f_items["temperature"] = int((temp * 1.8) + 32)
+
         f_data_ref = db.collection(u'{}'.format('fridge_data')).document(u'{}'.format("data"))
         f_data_ref.set(f_items, merge=True)
+
+        if door_alarm is True and time_since_alarm > 20:
+            play_song(0)
+            readings.append(15)
+            time_since_alarm = 0
+            break
+        elif power_alarm is True and time_since_alarm > 20:
+            play_song(1)
+            readings.append(15)
+            time_since_alarm = 0
+            break
+        else:
+            time_since_alarm += 1
+
+    end_time1 = datetime.datetime.today()
+    part1_time = end_time1.timestamp() - st_time.timestamp()
+
+    return door_alarm, power_alarm, readings, part1_time
+
+
+def update_firebase(database, readings, part1_time):
+    global st_time
+    total = 0
+    exp_change = 0
+    items = []
     # Takes average to use updating time remaining
-    """
-    Temp Comment to Test
     for reading in readings:
         total += reading
     average = total/len(readings)
-    if 10 < average < 50:
-        exp_change = 0.00208333333
-
+    if 4 < average < 30:
+        exp_change = part1_time/7200
     # Get items from firebase
     data_ref = db.collection(u'{}'.format(database))
     docs = data_ref.stream()
@@ -91,20 +138,31 @@ def tick_forward(database, door_alarm, power_alarm):
             elif isinstance(item[1][dict_item], int):
                 new_data[u'{}'.format(dict_item)] = item[1][dict_item]
         new_data_ref.set(new_data)
-    """
-    
-    end_time = datetime.datetime.today()
-    print(end_time - st_time)
 
-    return door_alarm, power_alarm
+    end_time = datetime.datetime.today()
+    print("Loop Completed in {}".format(end_time - st_time))
+
+
+def play_song(s):
+    mario.setup()
+    if s == 0:
+        print("Super Mario Theme")
+        mario.play(mario.melody, mario.tempo, 1.3, 0.800)
+            
+    if s == 1:
+        print("Super Mario Underworld Theme")
+        mario.play(mario.underworld_melody, mario.underworld_tempo, 1.3, 0.800)
+    mario.destroy()
 
 
 door_alarm = 0
 power_alarm = 0
+time_since_alarm = 1000
+
 
 # Guard
 if __name__ == '__main__':
-    print("sTART")
+    print("Starting...\n")
     while True:
-        door_alarm, power_alarm = tick_forward('inventory', door_alarm, power_alarm)
-        print("TICK")
+        door_alarm, power_alarm, temps, time1 = tick_forward(door_alarm, power_alarm)
+        update_firebase("inventory", temps, time1)
