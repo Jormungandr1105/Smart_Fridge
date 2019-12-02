@@ -160,6 +160,7 @@ def play_song(s):
 door_alarm = 0
 power_alarm = 0
 time_since_alarm = 1000
+time_since_feedback = 9600
 
 
 # Guard
@@ -168,3 +169,19 @@ if __name__ == '__main__':
     while True:
         door_alarm, power_alarm, temps, time1 = tick_forward(door_alarm, power_alarm)
         update_firebase("inventory", temps, time1)
+        if time_since_feedback >= 9600:
+            time_since_feedback = 0
+            grave_items = []
+            data_ref = db.collection(u'{}'.format("graveyard"))
+            docs = data_ref.stream()
+            for doc in docs:
+                grave_items.append((doc.id, doc.to_dict()))
+            for item in grave_items:
+                exp_date = float(item[1]['expDate'])
+                add_date = float(item[1]['addDate'])
+                if (exp_date - add_date) < 100000:
+                    info = dict()
+                    info['name'] = item[1]['name']
+                    info['feedback'] = "You seem to be wasting food. Try buying fewer/less {}(s)".format(item[1]['name'])
+                    f_data_ref = db.collection(u'{}'.format('feedback')).document(u'{}'.format(item[0]))
+                    f_data_ref.set(info, merge=True)
