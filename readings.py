@@ -13,7 +13,7 @@ try:
 
     def get_reading():
         humidity, temperature = Adafruit_DHT.read_retry(DHT_SENSOR, DHT_PIN)
-        return int(humidity), int(temperature)
+        return float(humidity), float(temperature)
 
 except ModuleNotFoundError:
     print("Module Not Found")
@@ -22,8 +22,10 @@ except ModuleNotFoundError:
 
     def get_reading():
         time.sleep(1)
-        return rand.randint(10, 50), rand.randint(0, 12)
+        return rand.uniform(10, 50), rand.uniform(0, 12)
 
 
 if __name__ == '__main__':
-    print(get_reading())
+    for x in range(10):
+        humidity, temperature = get_reading()
+        print("Temperature: {:.0f}°C\tHumidity: {:.0f}%".format(temperature, humidity))

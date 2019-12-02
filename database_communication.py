@@ -47,7 +47,7 @@ def tick_forward(door_alarm, power_alarm):
         humd, temp = read.get_reading()
         readings.append(temp)
         f_items = dict()
-        if temp > 4:
+        if temp > 4.4:
             if ls.door_open(11):
                 if power_alarm is True:
                     pass
@@ -73,7 +73,7 @@ def tick_forward(door_alarm, power_alarm):
             door_alarm = False
             power_alarm = False
 
-        f_items['humidity'] = humd
+        f_items['humidity'] = int(humd)
         f_items["temperature"] = int((temp * 1.8) + 32)
 
         f_data_ref = db.collection(u'{}'.format('fridge_data')).document(u'{}'.format("data"))
@@ -107,7 +107,7 @@ def update_firebase(database, readings, part1_time):
     for reading in readings:
         total += reading
     average = total/len(readings)
-    if 4 < average < 30:
+    if 4.4 < average:
         exp_change = part1_time/7200
     # Get items from firebase
     data_ref = db.collection(u'{}'.format(database))
@@ -119,11 +119,13 @@ def update_firebase(database, readings, part1_time):
     for item in items:
         z = item[1]['expDate']
         y = item[1]['addDate']
+        q = item[1]['expDate2']
         z = float(z)
         y = float(y)
-        z = z - (exp_change * (z - y))
+        q = float(q)
         current_time = datetime.datetime.today()
         ct_mils = (current_time.timestamp()*1000)
+        z = max(z - (exp_change * (q - y)), ct_mils)
         item[1]['expDate'] = int(z)
         item[1]['daysOld'] = math.floor((ct_mils - y) / 80640000)
         item[1]['daysLeft'] = math.ceil((z - ct_mils) / 80640000)
@@ -158,6 +160,7 @@ def play_song(s):
 door_alarm = 0
 power_alarm = 0
 time_since_alarm = 1000
+
 
 # Guard
 if __name__ == '__main__':
