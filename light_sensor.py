@@ -21,6 +21,8 @@ try:
         # Count until the pin goes high
         while GPIO.input(pin_to_circuit) == GPIO.LOW:
             count += 1
+            if count > 1700:
+                break
 
         if count < 1500:
             return True
