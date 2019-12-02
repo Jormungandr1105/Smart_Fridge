@@ -159,7 +159,6 @@ door_alarm = 0
 power_alarm = 0
 time_since_alarm = 1000
 
-
 # Guard
 if __name__ == '__main__':
     print("Starting...\n")
